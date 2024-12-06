@@ -21,17 +21,17 @@ class PointEncoder(nn.Module):
 
     def forward(self, x):
         """
-        :param x: torch.tensor [b, d_in, l_in]
+        :param x: torch.tensor [b, t, d_in, l_in]
         :return: torch.tensor [b, d_out]
         """
+        x = x.squeeze(1)
         # sampling points
-        len_in = x.shape[2]
-        if len_in != self.num_point:
+        if x.shape[2] != self.num_point:
             x = self.sampling_uniform(x)
 
         x = self.act(self.conv_in(x))
         xs = []
-        for (lyr, glyr) in zip(self.layers, self.glayers):
+        for (lyr, glyr) in zip(self.lyrs, self.glyrs):
             x = self.act(lyr(x))
             gx = x.max(dim=-1, keepdim=True).values
             gx = torch.cat([x, gx.expand_as(x)], dim=1)
@@ -49,3 +49,12 @@ class PointEncoder(nn.Module):
             x = torch.cat([x, pad], dim=2)
         idx = torch.randperm(x.shape[2])[:self.num_point]
         return x[..., idx]
+
+
+if __name__ == '__main__':
+    enc = PointEncoder(in_shape=(3, 4096), hidden_dim=128, embed_dim=128, num_lyr=4)
+    print(enc)
+    print('param:', sum([p.data.nelement() for p in enc.parameters()]))
+    x = torch.randn((1, 1, 3, 4097))
+    x = enc(x)
+    print(x.shape)

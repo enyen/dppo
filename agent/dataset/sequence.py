@@ -44,6 +44,7 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         img_cond_steps=1,
         max_n_episodes=10000,
         use_img=False,
+        use_point=False,
         device="cuda:0",
     ):
         assert (
@@ -54,6 +55,7 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         self.img_cond_steps = img_cond_steps
         self.device = device
         self.use_img = use_img
+        self.use_point = use_point
         self.max_n_episodes = max_n_episodes
         self.dataset_path = dataset_path
 
@@ -87,6 +89,11 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
                 device
             )  # (total_num_steps, C, H, W)
             log.info(f"Images shape/type: {self.images.shape, self.images.dtype}")
+        if self.use_point:
+            self.points = torch.from_numpy(dataset["points"][:total_num_steps]).to(
+                device
+            )  # (total_num_steps, C, L)
+            log.info(f"Points shape/type: {self.points.shape, self.points.dtype}")
 
     def __getitem__(self, idx):
         """
@@ -112,6 +119,15 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
                 ]
             )
             conditions["rgb"] = images
+        if self.use_point:
+            points = self.points[(start - num_before_start) : end]
+            points = torch.stack(
+                [
+                    points[max(num_before_start - t, 0)]
+                    for t in reversed(range(self.img_cond_steps))
+                ]
+            )
+            conditions["point"] = points
         batch = Batch(actions, conditions)
         return batch
 
