@@ -623,7 +623,6 @@ class PointUnet1D(nn.Module):
         self,
         backbone,
         action_dim,
-        img_cond_steps=1,
         cond_dim=None,
         diffusion_step_embed_dim=32,
         dim=32,
@@ -641,7 +640,6 @@ class PointUnet1D(nn.Module):
 
         # vision
         self.backbone = backbone
-        assert img_cond_steps == 1
         visual_feature_dim = spatial_emb
 
         # unet
@@ -783,8 +781,9 @@ class PointUnet1D(nn.Module):
         """
         x: (B, Ta, act_dim)
         time: (B,) or int, diffusion step
-        cond: dict with key state/rgb; more recent obs at the end
+        cond: dict with key state and point
             state: (B, To, obs_dim)
+            point: (B, To, num_point, num_channel)
         """
         B = len(x)
 

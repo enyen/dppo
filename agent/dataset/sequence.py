@@ -42,6 +42,7 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         horizon_steps=64,
         cond_steps=1,
         img_cond_steps=1,
+        pnt_cond_steps=1,
         max_n_episodes=10000,
         use_img=False,
         use_point=False,
@@ -53,6 +54,7 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         self.horizon_steps = horizon_steps
         self.cond_steps = cond_steps  # states (proprio, etc.)
         self.img_cond_steps = img_cond_steps
+        self.pnt_cond_steps = pnt_cond_steps
         self.device = device
         self.use_img = use_img
         self.use_point = use_point
@@ -124,7 +126,7 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
             points = torch.stack(
                 [
                     points[max(num_before_start - t, 0)]
-                    for t in reversed(range(self.img_cond_steps))
+                    for t in reversed(range(self.pnt_cond_steps))
                 ]
             )
             conditions["point"] = points
