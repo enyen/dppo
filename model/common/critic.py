@@ -204,3 +204,33 @@ class ViTCritic(CriticObs):
             feat = self.compress.forward(feat, state)
         feat = torch.cat([feat, state], dim=-1)
         return super().forward(feat)
+
+
+class PointCritic(CriticObs):
+    """PointEncoder + MLP, state only"""
+
+    def __init__(
+        self,
+        backbone,
+        cond_dim,
+        pnt_cond_steps=1,
+        spatial_emb=64,
+        **kwargs,
+    ):
+        mlp_obs_dim = spatial_emb + cond_dim
+        super().__init__(cond_dim=mlp_obs_dim, **kwargs)
+        self.backbone = backbone
+        self.pnt_cond_steps = pnt_cond_steps
+
+    def forward(self, cond):
+        """
+        cond: dict with key state & point
+            state: (B, To, Do)
+            point: (B, To, L, D)
+        """
+        B, T, L, D = cond["point"].shape
+        state = cond["state"].view(B, -1)  # [B, Ds]
+        point = cond["point"][:, -self.pnt_cond_steps:]
+        feat = self.backbone(point)  # [B, Dp]
+        feat = torch.cat([feat, state], dim=-1)
+        return super().forward(feat)
