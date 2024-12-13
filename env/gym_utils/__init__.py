@@ -30,6 +30,7 @@ def make_async(
     # below for robomimic only
     robomimic_env_cfg_path=None,
     use_image_obs=False,
+    use_point_obs=False,
     render_offscreen=False,
     reward_shaping=False,
     shape_meta=None,
@@ -192,6 +193,8 @@ def make_async(
                 shape = value["shape"]
                 if key.endswith("rgb"):
                     min_value, max_value = -1, 1
+                elif key.endswith("point"):
+                    min_value, max_value = -1, 1
                 elif key.endswith("state"):
                     min_value, max_value = -1, 1
                 else:
@@ -222,7 +225,7 @@ def make_async(
         AsyncVectorEnv(
             env_fns,
             dummy_env_fn=(
-                dummy_env_fn if render or render_offscreen or use_image_obs else None
+                dummy_env_fn if render or render_offscreen or use_image_obs or use_point_obs else None
             ),
             delay_init="avoiding" in id,  # add delay for D3IL initialization
         )
