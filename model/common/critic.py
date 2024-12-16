@@ -222,7 +222,7 @@ class PointCritic(CriticObs):
         self.backbone = backbone
         self.pnt_cond_steps = pnt_cond_steps
 
-    def forward(self, cond):
+    def forward(self, cond, no_augment=False):
         """
         cond: dict with key state & point
             state: (B, To, Do)
