@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 from einops import rearrange, reduce
-from pytorch3d.ops import sample_farthest_points, ball_query, knn_points
+from pytorch3d.ops import sample_farthest_points, knn_points
+from model.common.mlp import ResidualMLP
 
 
 class PointEncoder(nn.Module):
@@ -71,11 +72,16 @@ class PointEncoderSA(nn.Module):
 
         self.lyrs = nn.ModuleList()
         for i in range(num_lyr):
-            self.lyrs.append(nn.Sequential(
-                SelfAttention(hidden_dim, num_head, dropout[0]),
-                FefoAttention(hidden_dim, hidden_dim * 2, dropout[1])))
+            h_dim = hidden_dim * 2 ** i
+            lyr = nn.ModuleDict({
+                'sa': nn.Sequential(
+                    SelfAttention(h_dim, num_head, dropout[0]),
+                    FefoAttention(h_dim, h_dim * 3, dropout[1])),
+                'up': ResidualMLP([h_dim] + [h_dim * 2] * 4, use_layernorm=True)})
+            self.lyrs.append(lyr)
 
-        self.proj_out = nn.Linear(hidden_dim, embed_dim // pnt_cond_steps)
+        h_dim = hidden_dim * 2 ** num_lyr
+        self.proj_out = nn.Linear(h_dim, embed_dim // pnt_cond_steps)
 
     def forward(self, x):
         """
@@ -100,9 +106,10 @@ class PointEncoderSA(nn.Module):
             x = sample_gather(x, num_que, self.num_neb)
             # SA
             x = rearrange(x, 'b q k d -> (b q) k d')
-            x = lyr(x)
+            x = lyr['sa'](x)
             x = rearrange(x, '(b q) k d -> b q k d', b=b, q=num_que)
             x = reduce(x, 'b q k d -> b q d', 'max')
+            x = lyr['up'](x)
 
         # project out
         x = self.proj_out(x)
@@ -159,7 +166,7 @@ def sample_gather(pts, num_que, num_neb):
     :return: neb[b, q, k, d]
     """
     # sampling query [b, q, d]
-    que, _ = sample_farthest_points(pts, K=num_que)
+    que, _ = sample_farthest_points(pts, K=num_que, random_start_point=True)
 
     # grouping neb [b, q, k, d]
     neb = knn_points(que, pts, K=num_neb, return_nn=True, return_sorted=False).knn
@@ -168,13 +175,10 @@ def sample_gather(pts, num_que, num_neb):
 
 
 if __name__ == '__main__':
-    # enc = PointEncoder(in_shape=(4096, 3), pnt_cond_steps=1, hidden_dim=64, embed_dim=64, num_lyr=4)
-    enc = PointEncoderSA(in_shape=(4096, 3), pnt_cond_steps=1, hidden_dim=64, embed_dim=64, num_lyr=3)
+    # enc = PointEncoder(in_shape=(2048, 3), pnt_cond_steps=1, hidden_dim=64, embed_dim=64, num_lyr=4)
+    enc = PointEncoderSA(in_shape=(2048, 3), pnt_cond_steps=1, hidden_dim=32, embed_dim=96, num_lyr=2)
     print(enc)
     print('param:', sum([p.data.nelement() for p in enc.parameters()]))
-    x = torch.randn((1, 1, 4097, 3))
-    y = enc(x)
-    print('input:', x.shape, ', output:', y.shape)
-    x = torch.randn((1, 1, 4095, 3))
+    x = torch.randn((1, 1, 2048, 3))
     y = enc(x)
     print('input:', x.shape, ', output:', y.shape)
