@@ -94,7 +94,7 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         if self.use_point:
             self.points = torch.from_numpy(dataset["points"][:total_num_steps]).to(
                 device
-            )  # (total_num_steps, C, L)
+            )  # (total_num_steps, L, C)
             log.info(f"Points shape/type: {self.points.shape, self.points.dtype}")
 
     def __getitem__(self, idx):
