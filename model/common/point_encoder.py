@@ -10,43 +10,48 @@ class PointEncoder(nn.Module):
     https://arxiv.org/pdf/2410.10803v1
     """
     def __init__(self, in_shape=(), pnt_cond_steps=1,
-                 hidden_dim=64, embed_dim=64, num_lyr=4):
+                 hidden_dim=(16, 32, 64, 128), embed_dim=128, dropout=0):
         super().__init__()
         in_dim = in_shape[1]
         self.num_point = in_shape[0]
         self.pnt_cond_steps = pnt_cond_steps
 
-        self.activ = nn.ReLU()
-        self.proj_in = nn.Linear(in_dim, hidden_dim)
         self.lyrs, self.glyrs = nn.ModuleList(), nn.ModuleList()
-        for i in range(num_lyr):
-            self.lyrs.append(nn.Linear(hidden_dim, hidden_dim))
-            self.glyrs.append(nn.Linear(hidden_dim * 2, hidden_dim))
-        self.proj_out = nn.Linear(hidden_dim * num_lyr, embed_dim // pnt_cond_steps)
+        for i in range(len(hidden_dim)):
+            in_dim_ = hidden_dim[i - 1] if i else in_dim
+            self.lyrs.append(nn.Sequential(
+                nn.Linear(in_dim_, hidden_dim[i]),
+                nn.ReLU(),
+            ))
+            self.glyrs.append(nn.Sequential(
+                nn.Linear(hidden_dim[i] * 2, hidden_dim[i]),
+                nn.ReLU(),
+                nn.Dropout(dropout),
+            ))
+        assert embed_dim % pnt_cond_steps == 0, 'embed_dim need to be divisible by pnt_cond_steps'
+        self.proj_out = nn.Linear(sum(hidden_dim), embed_dim // pnt_cond_steps)
 
     def forward(self, x):
         """
         :param x: torch.tensor [b, t, l_in, d_in]
         :return: torch.tensor [b, d_out]
         """
-        b, t = x.shape[:2]
+        b, t, l, _ = x.shape
         assert t == self.pnt_cond_steps
         x = rearrange(x, 'b t l d -> (b t) l d')
 
         # sampling points
-        if x.shape[2] != self.num_point:
+        if l != self.num_point:
             x = sampling_uniform(x, self.num_point)
 
-        x = self.activ(self.proj_in(x))
         xs = []
         for (lyr, glyr) in zip(self.lyrs, self.glyrs):
-            x = self.activ(lyr(x))
+            x = lyr(x)
             gx = x.max(dim=1, keepdim=True).values
             gx = torch.cat([x, gx.expand_as(x)], dim=2)
-            x = self.activ(glyr(gx))
+            x = glyr(gx)
             xs.append(x)
-        x = torch.cat(xs, dim=2)
-        x = self.proj_out(x)
+        x = self.proj_out(torch.cat(xs, dim=2))
         x = x.max(dim=1).values
         x = rearrange(x, '(b t) d -> b (d t)', b=b, t=t)
         return x
@@ -57,8 +62,8 @@ class PointEncoderSA(nn.Module):
     https://arxiv.org/pdf/2202.06407
     """
     def __init__(self, in_shape=(), pnt_cond_steps=1,
-                 hidden_dim=64, embed_dim=64, num_lyr=3, dropout=(0, 0), num_head=4,
-                 mul_que=0.0625, mul_neb=1.25):
+                 hidden_dim=(16, 32, 64), embed_dim=64, dropout=(0, 0), num_head=4,
+                 mul_que=0.125, mul_neb=1.25):
         super().__init__()
         in_dim = in_shape[1]
         self.num_point = in_shape[0]
@@ -67,33 +72,32 @@ class PointEncoderSA(nn.Module):
         self.num_neb = int(mul_neb / mul_que)
 
         self.proj_in = nn.Sequential(
-            nn.Linear(in_dim, hidden_dim),
+            nn.Linear(in_dim, hidden_dim[0]),
             nn.ReLU())
 
         self.lyrs = nn.ModuleList()
-        for i in range(num_lyr):
-            h_dim = hidden_dim * 2 ** i
+        for i in range(len(hidden_dim)):
             lyr = nn.ModuleDict({
                 'sa': nn.Sequential(
-                    SelfAttention(h_dim, num_head, dropout[0]),
-                    FefoAttention(h_dim, h_dim * 3, dropout[1])),
-                'up': ResidualMLP([h_dim] + [h_dim * 2] * 4, use_layernorm=True)})
+                    SelfAttention(hidden_dim[i], num_head, dropout[0]),
+                    FefoAttention(hidden_dim[i], hidden_dim[i] * 3, dropout[1])),
+                'up': ResidualMLP([hidden_dim[i]] + [hidden_dim[i] * 2] * 4, use_layernorm=True)})
             self.lyrs.append(lyr)
 
-        h_dim = hidden_dim * 2 ** num_lyr
-        self.proj_out = nn.Linear(h_dim, embed_dim // pnt_cond_steps)
+        assert embed_dim % pnt_cond_steps == 0, 'embed_dim need to be divisible by pnt_cond_steps'
+        self.proj_out = nn.Linear(hidden_dim[-1] * 2, embed_dim // pnt_cond_steps)
 
     def forward(self, x):
         """
         :param x: torch.tensor [b, t, l_in, d_in]
         :return: torch.tensor [b, d_out]
         """
-        b, t = x.shape[:2]
+        b, t, l, _ = x.shape
         assert t == self.pnt_cond_steps
         x = rearrange(x, 'b t l d -> (b t) l d')
 
         # sampling points
-        if x.shape[2] != self.num_point:
+        if l != self.num_point:
             x = sampling_uniform(x, self.num_point)
 
         # project in
@@ -107,7 +111,7 @@ class PointEncoderSA(nn.Module):
             # SA
             x = rearrange(x, 'b q k d -> (b q) k d')
             x = lyr['sa'](x)
-            x = rearrange(x, '(b q) k d -> b q k d', b=b, q=num_que)
+            x = rearrange(x, '(b q) k d -> b q k d', b=b * t, q=num_que)
             x = reduce(x, 'b q k d -> b q d', 'max')
             x = lyr['up'](x)
 
@@ -175,10 +179,11 @@ def sample_gather(pts, num_que, num_neb):
 
 
 if __name__ == '__main__':
-    # enc = PointEncoder(in_shape=(2048, 3), pnt_cond_steps=1, hidden_dim=64, embed_dim=64, num_lyr=4)
-    enc = PointEncoderSA(in_shape=(2048, 3), pnt_cond_steps=1, hidden_dim=32, embed_dim=96, num_lyr=2)
+    # enc = PointEncoder(in_shape=(640, 3), pnt_cond_steps=2, hidden_dim=(16, 32, 64, 128), embed_dim=128)
+    enc = PointEncoderSA(in_shape=(640, 3), pnt_cond_steps=1, hidden_dim=(16, 32), embed_dim=64)
     print(enc)
     print('param:', sum([p.data.nelement() for p in enc.parameters()]))
     x = torch.randn((1, 1, 2048, 3))
+    print('input:', x.shape)
     y = enc(x)
-    print('input:', x.shape, ', output:', y.shape)
+    print('output:', y.shape)
