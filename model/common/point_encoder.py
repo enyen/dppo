@@ -9,11 +9,10 @@ class PointEncoder(nn.Module):
     """
     https://arxiv.org/pdf/2410.10803v1
     """
-    def __init__(self, in_shape=(), pnt_cond_steps=1,
+    def __init__(self, in_dim=3, pnt_cond_steps=1, augment_pnt=0.01,
                  hidden_dim=(16, 32, 64, 128), embed_dim=128, dropout=0):
         super().__init__()
-        in_dim = in_shape[1]
-        self.num_point = in_shape[0]
+        self.augment_pnt =augment_pnt
         self.pnt_cond_steps = pnt_cond_steps
 
         self.lyrs, self.glyrs = nn.ModuleList(), nn.ModuleList()
@@ -39,10 +38,7 @@ class PointEncoder(nn.Module):
         b, t, l, _ = x.shape
         assert t == self.pnt_cond_steps
         x = rearrange(x, 'b t l d -> (b t) l d')
-
-        # sampling points
-        if l != self.num_point:
-            x = sampling_uniform(x, self.num_point)
+        x = process_point(x, self.augment_pnt)
 
         xs = []
         for (lyr, glyr) in zip(self.lyrs, self.glyrs):
@@ -61,12 +57,11 @@ class PointEncoderSA(nn.Module):
     """
     https://arxiv.org/pdf/2202.06407
     """
-    def __init__(self, in_shape=(), pnt_cond_steps=1,
+    def __init__(self, in_dim=3, pnt_cond_steps=1, augment_pnt=0.01,
                  hidden_dim=(16, 32, 64), embed_dim=64, dropout=(0, 0), num_head=4,
                  mul_que=0.125, mul_neb=1.25):
         super().__init__()
-        in_dim = in_shape[1]
-        self.num_point = in_shape[0]
+        self.augment_pnt = augment_pnt
         self.pnt_cond_steps = pnt_cond_steps
         self.mul_que = mul_que
         self.num_neb = int(mul_neb / mul_que)
@@ -95,10 +90,7 @@ class PointEncoderSA(nn.Module):
         b, t, l, _ = x.shape
         assert t == self.pnt_cond_steps
         x = rearrange(x, 'b t l d -> (b t) l d')
-
-        # sampling points
-        if l != self.num_point:
-            x = sampling_uniform(x, self.num_point)
+        x = process_point(x, self.augment_pnt)
 
         # project in
         x = self.proj_in(x)  # [b l d]
@@ -128,7 +120,6 @@ class SelfAttention(nn.Module):
         self.norm = nn.LayerNorm(d_model, eps=layer_norm_eps)
         self.attn = nn.MultiheadAttention(d_model, n_head, dropout=0, batch_first=True)
         self.drop = nn.Dropout(dropout)
-        nn.attention.enable_mem_efficient_sdp(False)
 
     def forward(self, tgt):
         identity = tgt.clone()
@@ -153,13 +144,22 @@ class FefoAttention(nn.Module):
         return x + self.fefo(x)
 
 
-def sampling_uniform(x, num_point):
-    b, l, d = x.shape
-    if l < num_point:
-        pad = torch.zeros(b, num_point - l, d).to(x.device)
-        x = torch.cat([x, pad], dim=1)
-    idx = torch.randperm(x.shape[1])[:num_point]
-    return x[:, idx]
+def process_point(pnt, noise=0.):
+    """
+    sample valid points and add noise
+    :param pnt: torch.tensor [b, l, d]
+    :param noise: float, noise level
+    :return: torch.tensor [b, l', d]
+    """
+    # valid point
+    msk = pnt.sum(dim=-1) != 0  # bool [b, l]
+    l = msk.sum(dim=-1).min()  # min([b])
+    pnt = pnt[:, :l]
+
+    # noise
+    if noise > 0:
+        pnt = pnt + torch.zeros_like(pnt).uniform_(-noise, noise)
+    return pnt
 
 
 def sample_gather(pts, num_que, num_neb):
@@ -179,11 +179,11 @@ def sample_gather(pts, num_que, num_neb):
 
 
 if __name__ == '__main__':
-    # enc = PointEncoder(in_shape=(640, 3), pnt_cond_steps=2, hidden_dim=(16, 32, 64, 128), embed_dim=128)
-    enc = PointEncoderSA(in_shape=(640, 3), pnt_cond_steps=1, hidden_dim=(16, 32), embed_dim=64)
+    enc = PointEncoder(pnt_cond_steps=1, hidden_dim=(16, 32), embed_dim=32)
+    # enc = PointEncoderSA(pnt_cond_steps=1, hidden_dim=(16, 32), embed_dim=32)
     print(enc)
     print('param:', sum([p.data.nelement() for p in enc.parameters()]))
-    x = torch.randn((1, 1, 2048, 3))
+    x = torch.randn((1, 1, 2048, 3))  # [b, t, l, d]
     print('input:', x.shape)
     y = enc(x)
     print('output:', y.shape)

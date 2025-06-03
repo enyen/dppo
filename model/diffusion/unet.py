@@ -635,13 +635,11 @@ class PointUnet1D(nn.Module):
         cond_predict_scale=False,
         groupnorm_eps=1e-5,
         spatial_emb=0,
-        augment_pnt=0,
     ):
         super().__init__()
 
         # vision
         self.backbone = backbone
-        self.augment_pnt = augment_pnt
         visual_feature_dim = spatial_emb
 
         # unet
@@ -801,7 +799,6 @@ class PointUnet1D(nn.Module):
 
         # point [b, c, l] -> [b, c']
         pnt = cond["point"]
-        pnt = pnt + torch.zeros_like(pnt).normal_(0, self.augment_pnt)
         feat = self.backbone(pnt)
 
         cond_encoded = torch.cat([feat, state], dim=-1)
