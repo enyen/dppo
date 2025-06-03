@@ -12,6 +12,103 @@ from model.common.mlp import MLP, ResidualMLP
 from model.common.modules import SpatialEmb, RandomShiftsAug
 
 
+class Gaussian_PointMLP(nn.Module):
+    """With point-encoder backbone"""
+
+    def __init__(
+        self,
+        backbone,
+        action_dim,
+        horizon_steps,
+        cond_dim,
+        spatial_emb=0,
+        pnt_cond_steps=1,
+        mlp_dims=[256, 256, 256],
+        activation_type="Mish",
+        residual_style=False,
+        use_layernorm=False,
+        fixed_std=None,
+        learn_fixed_std=False,
+        std_min=0.01,
+        std_max=1
+    ):
+        super().__init__()
+
+        # vision
+        self.backbone = backbone
+        self.pnt_cond_steps = pnt_cond_steps
+
+        # head
+        self.action_dim = action_dim
+        self.horizon_steps = horizon_steps
+        input_dim = spatial_emb + cond_dim
+        output_dim = action_dim * horizon_steps
+        if residual_style:
+            model = ResidualMLP
+        else:
+            model = MLP
+        self.mlp_mean = model(
+            [input_dim] + mlp_dims + [output_dim],
+            activation_type=activation_type,
+            out_activation_type="Identity",
+            use_layernorm=use_layernorm,
+        )
+        if fixed_std is None:
+            self.mlp_logvar = MLP(
+                [input_dim] + mlp_dims[-1:] + [output_dim],
+                activation_type=activation_type,
+                out_activation_type="Identity",
+                use_layernorm=use_layernorm,
+            )
+        elif learn_fixed_std:  # initialize to fixed_std
+            self.logvar = torch.nn.Parameter(
+                torch.log(torch.tensor([fixed_std**2 for _ in range(action_dim)])),
+                requires_grad=True,
+            )
+        self.logvar_min = torch.nn.Parameter(
+            torch.log(torch.tensor(std_min**2)), requires_grad=False
+        )
+        self.logvar_max = torch.nn.Parameter(
+            torch.log(torch.tensor(std_max**2)), requires_grad=False
+        )
+        self.use_fixed_std = fixed_std is not None
+        self.fixed_std = fixed_std
+        self.learn_fixed_std = learn_fixed_std
+
+    def forward(self, cond):
+        device = cond["point"].device
+        B, T, L, D = cond["point"].shape
+
+        # flatten history
+        state = cond["state"].view(B, -1)
+
+        # Take recent point --- sometimes we want to use fewer pnt_cond_steps than cond_steps (e.g., 1 point but 3 prio)
+        pnt = cond["point"][:, -self.pnt_cond_steps :]
+        feat = self.backbone(pnt)
+
+        # mlp
+        x_encoded = torch.cat([feat, state], dim=-1)
+        out_mean = self.mlp_mean(x_encoded)
+        out_mean = torch.tanh(out_mean).view(
+            B, self.horizon_steps * self.action_dim
+        )  # tanh squashing in [-1, 1]
+
+        if self.learn_fixed_std:
+            out_logvar = torch.clamp(self.logvar, self.logvar_min, self.logvar_max)
+            out_scale = torch.exp(0.5 * out_logvar)
+            out_scale = out_scale.view(1, self.action_dim)
+            out_scale = out_scale.repeat(B, self.horizon_steps)
+        elif self.use_fixed_std:
+            out_scale = torch.ones_like(out_mean).to(device) * self.fixed_std
+        else:
+            out_logvar = self.mlp_logvar(x_encoded).view(
+                B, self.horizon_steps * self.action_dim
+            )
+            out_logvar = torch.clamp(out_logvar, self.logvar_min, self.logvar_max)
+            out_scale = torch.exp(0.5 * out_logvar)
+        return out_mean, out_scale
+
+
 class Gaussian_VisionMLP(nn.Module):
     """With ViT backbone"""
 
