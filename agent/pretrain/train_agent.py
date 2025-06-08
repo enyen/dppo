@@ -99,7 +99,7 @@ class PreTrainAgent:
         self.dataloader_train = torch.utils.data.DataLoader(
             self.dataset_train,
             batch_size=self.batch_size,
-            num_workers=4 if self.dataset_train.device == "cpu" else 0,
+            num_workers=6 if self.dataset_train.device == "cpu" else 0,
             shuffle=True,
             pin_memory=True if self.dataset_train.device == "cpu" else False,
         )

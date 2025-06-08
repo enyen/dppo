@@ -39,6 +39,7 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         dataset_path,
+        norms_path,
         horizon_steps=64,
         cond_steps=1,
         img_cond_steps=1,
@@ -46,6 +47,7 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         max_n_episodes=10000,
         use_img=False,
         use_point=False,
+        augment_xy=0.,
         device="cuda:0",
     ):
         assert (
@@ -58,8 +60,7 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         self.device = device
         self.use_img = use_img
         self.use_point = use_point
-        self.max_n_episodes = max_n_episodes
-        self.dataset_path = dataset_path
+        self.augment_xy = augment_xy
 
         # Load dataset to device specified
         if dataset_path.endswith(".npz"):
@@ -69,6 +70,14 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
                 dataset = pickle.load(f)
         else:
             raise ValueError(f"Unsupported file format: {dataset_path}")
+        # Load normalizing stats to device specified
+        if norms_path.endswith(".npz"):
+            norms = np.load(norms_path, allow_pickle=False)  # only np arrays
+        elif norms_path.endswith(".pkl"):
+            with open(norms_path, "rb") as f:
+                norms = pickle.load(f)
+        else:
+            raise ValueError(f"Unsupported file format: {norms_path}")
         traj_lengths = dataset["traj_lengths"][:max_n_episodes]  # 1-D array
         total_num_steps = np.sum(traj_lengths)
 
@@ -97,21 +106,37 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
             )  # (total_num_steps, L, C)
             log.info(f"Points shape/type: {self.points.shape, self.points.dtype}")
 
+        # Extract normalizing stats
+        self.states_mean = torch.from_numpy(norms['obs_mean'])[None].float().to(device)
+        self.states_std = torch.from_numpy(norms['obs_std'])[None].float().to(device)
+        self.points_mean = torch.from_numpy(norms['pnt_mean']).float().to(device)
+        self.points_std = torch.from_numpy(norms['pnt_std']).float().to(device)
+        self.act_min = torch.from_numpy(norms['act_min'])[None].float().to(device)
+        act_max = torch.from_numpy(norms['act_max'])[None].float().to(device)
+        self.act_rng = act_max - self.act_min
+
     def __getitem__(self, idx):
         """
         repeat states/images if using history observation at the beginning of the episode
         """
+        augment_xy = torch.zeros((1, 3)).uniform_(-self.augment_xy, self.augment_xy).to(self.device)
+        augment_xy[0, 2] = 0
         start, num_before_start = self.indices[idx]
         end = start + self.horizon_steps
+
+        # action
+        actions = self.actions[start:end].clone()
+        actions[:, :3] = actions[:, :3] + augment_xy
+        actions = ((actions - self.act_min) / self.act_rng * 2 - 1).clip(-1., 1.)
+
+        # state
         states = self.states[(start - num_before_start) : (start + 1)]
-        actions = self.actions[start:end]
-        states = torch.stack(
-            [
-                states[max(num_before_start - t, 0)]
-                for t in reversed(range(self.cond_steps))
-            ]
-        )  # more recent is at the end
+        states = torch.stack([states[max(num_before_start - t, 0)]
+                              for t in reversed(range(self.cond_steps))])  # more recent is at the end
+        states[:, :3] = states[:, :3] + augment_xy
+        states = (states - self.states_mean) / self.states_std
         conditions = {"state": states}
+        # visual
         if self.use_img:
             images = self.images[(start - num_before_start) : end]
             images = torch.stack(
@@ -123,12 +148,11 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
             conditions["rgb"] = images
         if self.use_point:
             points = self.points[(start - num_before_start) : end]
-            points = torch.stack(
-                [
-                    points[max(num_before_start - t, 0)]
-                    for t in reversed(range(self.pnt_cond_steps))
-                ]
-            )
+            points = torch.stack([points[max(num_before_start - t, 0)]
+                                  for t in reversed(range(self.pnt_cond_steps))])
+            idx_valid = points.sum(dim=-1) != 0
+            points[idx_valid] = points[idx_valid] + augment_xy
+            points[idx_valid] = (points[idx_valid] - self.points_mean) / self.points_std
             conditions["point"] = points
         batch = Batch(actions, conditions)
         return batch
