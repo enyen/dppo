@@ -663,7 +663,7 @@ class PointUnet1D(nn.Module):
             cond_block_dim = dsed + cond_mlp_dims[-1] + visual_feature_dim
         else:
             cond_block_dim = dsed + cond_dim + visual_feature_dim
-        use_large_encoder_in_block = cond_mlp_dims is None and not smaller_encoder
+        use_large_encoder_in_block = not smaller_encoder
 
         mid_dim = dims[-1]
         self.mid_modules = nn.ModuleList(
