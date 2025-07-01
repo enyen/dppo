@@ -18,10 +18,10 @@ import logging
 import wandb
 
 log = logging.getLogger(__name__)
-from util.timer import Timer
+from dppo.util.timer import Timer
 from collections import deque
-from agent.finetune.train_agent import TrainAgent
-from util.scheduler import CosineAnnealingWarmupRestarts
+from dppo.agent.finetune.train_agent import TrainAgent
+from dppo.util.scheduler import CosineAnnealingWarmupRestarts
 
 
 class TrainDQLDiffusionAgent(TrainAgent):

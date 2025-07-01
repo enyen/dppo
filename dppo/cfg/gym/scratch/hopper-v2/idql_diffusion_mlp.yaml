@@ -3,7 +3,7 @@ defaults:
 hydra:
   run:
     dir: ${logdir}
-_target_: agent.finetune.train_idql_diffusion_agent.TrainIDQLDiffusionAgent
+_target_: dppo.agent.finetune.train_idql_diffusion_agent.TrainIDQLDiffusionAgent
 
 name: ${env_name}_idql_diffusion_mlp_ta${horizon_steps}_td${denoising_steps}
 logdir: ${oc.env:DPPO_LOG_DIR}/gym-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}
@@ -73,13 +73,13 @@ train:
   batch_size: 256
 
 model:
-  _target_: model.diffusion.diffusion_idql.IDQLDiffusion
+  _target_: dppo.model.diffusion.diffusion_idql.IDQLDiffusion
   # Sampling HPs
   min_sampling_denoising_std: 0.10
   randn_clip_value: 3
   #
   actor:
-    _target_: model.diffusion.mlp_diffusion.DiffusionMLP
+    _target_: dppo.model.diffusion.mlp_diffusion.DiffusionMLP
     horizon_steps: ${horizon_steps}
     action_dim: ${action_dim}
     cond_dim: ${eval:'${obs_dim} * ${cond_steps}'}
@@ -88,7 +88,7 @@ model:
     activation_type: ReLU
     residual_style: True
   critic_q:
-    _target_: model.common.critic.CriticObsAct
+    _target_: dppo.model.common.critic.CriticObsAct
     mlp_dims: [256, 256, 256]
     activation_type: Mish
     residual_style: True
@@ -96,7 +96,7 @@ model:
     action_dim: ${action_dim}
     action_steps: ${act_steps}
   critic_v:
-    _target_: model.common.critic.CriticObs
+    _target_: dppo.model.common.critic.CriticObs
     mlp_dims: [256, 256, 256]
     activation_type: Mish
     residual_style: True

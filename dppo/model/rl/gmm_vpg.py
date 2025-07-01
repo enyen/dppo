@@ -1,6 +1,6 @@
 import torch
 import logging
-from model.common.gmm import GMMModel
+from dppo.model.common.gmm import GMMModel
 
 
 class VPG_GMM(GMMModel):

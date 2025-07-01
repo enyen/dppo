@@ -3,7 +3,7 @@ defaults:
 hydra:
   run:  
     dir: ${logdir}
-_target_: agent.finetune.train_ppo_gaussian_agent.TrainPPOGaussianAgent
+_target_: dppo.agent.finetune.train_ppo_gaussian_agent.TrainPPOGaussianAgent
 
 name: ${env_name}_nopre_ppo_gaussian_mlp_ta${horizon_steps}
 logdir: ${oc.env:DPPO_LOG_DIR}/gym-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}
@@ -71,12 +71,12 @@ train:
   target_kl: 1
 
 model:
-  _target_: model.rl.gaussian_ppo.PPO_Gaussian
+  _target_: dppo.model.rl.gaussian_ppo.PPO_Gaussian
   clip_ploss_coef: 0.1
   randn_clip_value: 3
   #
   actor:
-    _target_: model.common.mlp_gaussian.Gaussian_MLP
+    _target_: dppo.model.common.mlp_gaussian.Gaussian_MLP
     mlp_dims: [512, 512, 512]
     activation_type: ReLU
     residual_style: False # with new logvar head
@@ -84,7 +84,7 @@ model:
     horizon_steps: ${horizon_steps}
     action_dim: ${action_dim}
   critic:
-    _target_: model.common.critic.CriticObs
+    _target_: dppo.model.common.critic.CriticObs
     cond_dim: ${eval:'${obs_dim} * ${cond_steps}'}
     mlp_dims: [256, 256, 256]
     activation_type: Mish

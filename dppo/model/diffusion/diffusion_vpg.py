@@ -19,8 +19,8 @@ import logging
 log = logging.getLogger(__name__)
 import torch.nn.functional as F
 
-from model.diffusion.diffusion import DiffusionModel, Sample
-from model.diffusion.sampling import make_timesteps, extract
+from dppo.model.diffusion.diffusion import DiffusionModel, Sample
+from dppo.model.diffusion.sampling import make_timesteps, extract
 from torch.distributions import Normal
 
 

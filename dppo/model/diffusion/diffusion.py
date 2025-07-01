@@ -15,7 +15,7 @@ import torch.nn.functional as F
 
 log = logging.getLogger(__name__)
 
-from model.diffusion.sampling import (
+from dppo.model.diffusion.sampling import (
     extract,
     cosine_beta_schedule,
     make_timesteps,

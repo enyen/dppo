@@ -9,9 +9,9 @@ import logging
 import einops
 from copy import deepcopy
 
-from model.common.mlp import MLP, ResidualMLP
-from model.diffusion.modules import SinusoidalPosEmb
-from model.common.modules import SpatialEmb, RandomShiftsAug
+from dppo.model.common.mlp import MLP, ResidualMLP
+from dppo.model.diffusion.modules import SinusoidalPosEmb
+from dppo.model.common.modules import SpatialEmb, RandomShiftsAug
 
 log = logging.getLogger(__name__)
 

@@ -10,7 +10,7 @@ from copy import deepcopy
 import numpy as np
 import einops
 
-from model.common.gaussian import GaussianModel
+from dppo.model.common.gaussian import GaussianModel
 
 log = logging.getLogger(__name__)
 

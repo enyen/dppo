@@ -3,7 +3,7 @@ defaults:
 hydra:
   run:
     dir: ${logdir}
-_target_: agent.finetune.train_calql_agent.TrainCalQLAgent
+_target_: dppo.agent.finetune.train_calql_agent.TrainCalQLAgent
 
 name: ${env_name}_calql_mlp_ta${horizon_steps}
 logdir: ${oc.env:DPPO_LOG_DIR}/gym-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}
@@ -77,12 +77,12 @@ train:
   automatic_entropy_tuning: True
 
 model:
-  _target_: model.rl.gaussian_calql.CalQL_Gaussian
+  _target_: dppo.model.rl.gaussian_calql.CalQL_Gaussian
   randn_clip_value: 3
   cql_min_q_weight: 5.0
   tanh_output: True
   actor:
-    _target_: model.common.mlp_gaussian.Gaussian_MLP
+    _target_: dppo.model.common.mlp_gaussian.Gaussian_MLP
     mlp_dims: [256, 256]
     activation_type: ReLU
     tanh_output: False  # squash after sampling instead
@@ -92,7 +92,7 @@ model:
     std_max: 7.3891
     std_min: 0.0067
   critic:
-    _target_: model.common.critic.CriticObsAct
+    _target_: dppo.model.common.critic.CriticObsAct
     mlp_dims: [256, 256]
     activation_type: ReLU
     use_layernorm: True
@@ -104,7 +104,7 @@ model:
   device: ${device}
 
 offline_dataset:
-  _target_: agent.dataset.sequence.StitchedSequenceQLearningDataset
+  _target_: dppo.agent.dataset.sequence.StitchedSequenceQLearningDataset
   dataset_path: ${offline_dataset_path}
   horizon_steps: ${horizon_steps}
   cond_steps: ${cond_steps}

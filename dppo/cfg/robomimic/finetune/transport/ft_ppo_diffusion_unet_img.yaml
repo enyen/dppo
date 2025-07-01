@@ -3,7 +3,7 @@ defaults:
 hydra:
   run:
     dir: ${logdir}
-_target_: agent.finetune.train_ppo_diffusion_img_agent.TrainPPOImgDiffusionAgent
+_target_: dppo.agent.finetune.train_ppo_diffusion_img_agent.TrainPPOImgDiffusionAgent
 
 name: ${env_name}_ft_diffusion_unet_img_ta${horizon_steps}_td${denoising_steps}_tdf${ft_denoising_steps}
 logdir: ${oc.env:DPPO_LOG_DIR}/robomimic-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}
@@ -98,7 +98,7 @@ train:
   target_kl: 1
 
 model:
-  _target_: model.diffusion.diffusion_ppo.PPODiffusion
+  _target_: dppo.model.diffusion.diffusion_ppo.PPODiffusion
   # HP to tune
   gamma_denoising: 0.99
   clip_ploss_coef: 0.01
@@ -118,12 +118,12 @@ model:
     action_dim: ${action_dim}
     min_eta: 0.1
     max_eta: 1.0
-    _target_: model.diffusion.eta.EtaFixed
+    _target_: dppo.model.diffusion.eta.EtaFixed
   network_path: ${base_policy_path}
   actor:
-    _target_: model.diffusion.unet.VisionUnet1D
+    _target_: dppo.model.diffusion.unet.VisionUnet1D
     backbone:
-      _target_: model.common.vit.VitEncoder
+      _target_: dppo.model.common.vit.VitEncoder
       obs_shape: ${shape_meta.obs.rgb.shape}
       num_channel: ${eval:'3 * ${img_cond_steps}'} # each image patch is history concatenated
       img_h: ${shape_meta.obs.rgb.shape[1]}
@@ -149,12 +149,12 @@ model:
     action_dim: ${action_dim}
     cond_dim: ${eval:'${obs_dim} * ${cond_steps}'}
   critic:
-    _target_: model.common.critic.ViTCritic
+    _target_: dppo.model.common.critic.ViTCritic
     spatial_emb: 128
     num_img: 2
     augment: False
     backbone:
-      _target_: model.common.vit.VitEncoder
+      _target_: dppo.model.common.vit.VitEncoder
       obs_shape: ${shape_meta.obs.rgb.shape}
       num_channel: ${eval:'3 * ${img_cond_steps}'} # each image patch is history concatenated
       img_h: ${shape_meta.obs.rgb.shape[1]}

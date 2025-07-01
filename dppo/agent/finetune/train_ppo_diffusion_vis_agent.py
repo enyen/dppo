@@ -13,9 +13,9 @@ import wandb
 import math
 
 log = logging.getLogger(__name__)
-from util.timer import Timer
-from agent.finetune.train_ppo_diffusion_agent import TrainPPODiffusionAgent
-from model.common.modules import RandomShiftsAug
+from dppo.util.timer import Timer
+from dppo.agent.finetune.train_ppo_diffusion_agent import TrainPPODiffusionAgent
+from dppo.model.common.modules import RandomShiftsAug
 
 
 class TrainPPOVisDiffusionAgent(TrainPPODiffusionAgent):

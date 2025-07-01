@@ -8,7 +8,7 @@ Modified from https://github.com/real-stanford/diffusion_policy/blob/main/diffus
 import logging
 import torch
 import torch.nn as nn
-from model.diffusion.modules import SinusoidalPosEmb
+from dppo.model.diffusion.modules import SinusoidalPosEmb
 
 logger = logging.getLogger(__name__)
 

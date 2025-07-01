@@ -11,7 +11,7 @@ import random
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
-from agent.dataset.d3il_dataset.avoiding_dataset import Avoiding_Dataset
+from dppo.agent.dataset.d3il_dataset.avoiding_dataset import Avoiding_Dataset
 
 
 def make_dataset(

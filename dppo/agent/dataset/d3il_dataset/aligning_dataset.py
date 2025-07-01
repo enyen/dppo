@@ -15,8 +15,8 @@ import pickle
 import numpy as np
 from tqdm import tqdm
 
-from agent.dataset.d3il_dataset.base_dataset import TrajectoryDataset
-from agent.dataset.d3il_dataset import sim_framework_path
+from dppo.agent.dataset.d3il_dataset.base_dataset import TrajectoryDataset
+from dppo.agent.dataset.d3il_dataset import sim_framework_path
 
 
 class Aligning_Dataset(TrajectoryDataset):

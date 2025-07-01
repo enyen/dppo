@@ -8,7 +8,7 @@ import torch
 
 log = logging.getLogger(__name__)
 
-from model.diffusion.diffusion_rwr import RWRDiffusion
+from dppo.model.diffusion.diffusion_rwr import RWRDiffusion
 
 
 class AWRDiffusion(RWRDiffusion):

@@ -5,7 +5,7 @@ import torch
 import pickle
 import numpy as np
 
-from agent.dataset.d3il_dataset.base_dataset import TrajectoryDataset
+from dppo.agent.dataset.d3il_dataset.base_dataset import TrajectoryDataset
 
 
 class Avoiding_Dataset(TrajectoryDataset):

@@ -12,8 +12,8 @@ import torch
 
 log = logging.getLogger(__name__)
 
-from model.diffusion.diffusion import DiffusionModel
-from model.diffusion.sampling import extract
+from dppo.model.diffusion.diffusion import DiffusionModel
+from dppo.model.diffusion.sampling import extract
 
 
 class DiffusionEval(DiffusionModel):

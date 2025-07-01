@@ -9,7 +9,7 @@ from torchdiffeq import odeint
 
 # adjoint can reduce memory, but not faster
 # from torchdiffeq import odeint_adjoint as odeint
-from model.diffusion.sde_lib import get_score_fn
+from dppo.model.diffusion.sde_lib import get_score_fn
 
 
 def get_likelihood_fn(

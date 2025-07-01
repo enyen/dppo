@@ -14,7 +14,7 @@ import wandb
 from copy import deepcopy
 
 log = logging.getLogger(__name__)
-from util.scheduler import CosineAnnealingWarmupRestarts
+from dppo.util.scheduler import CosineAnnealingWarmupRestarts
 
 DEVICE = "cuda:0"
 

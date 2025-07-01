@@ -3,7 +3,7 @@ defaults:
 hydra:
   run:
     dir: ${logdir}
-_target_: agent.pretrain.train_gaussian_agent.TrainGaussianAgent
+_target_: dppo.agent.pretrain.train_gaussian_agent.TrainGaussianAgent
 
 name: ${env}_pre_gaussian_mlp_img_ta${horizon_steps}
 logdir: ${oc.env:DPPO_LOG_DIR}/robomimic-pretrain/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}
@@ -44,11 +44,11 @@ train:
   save_model_freq: 500
 
 model:
-  _target_: model.common.gaussian.GaussianModel
+  _target_: dppo.model.common.gaussian.GaussianModel
   network:
-    _target_: model.common.mlp_gaussian.Gaussian_VisionMLP
+    _target_: dppo.model.common.mlp_gaussian.Gaussian_VisionMLP
     backbone:
-      _target_: model.common.vit.VitEncoder
+      _target_: dppo.model.common.vit.VitEncoder
       obs_shape: ${shape_meta.obs.rgb.shape}
       num_channel: ${eval:'3 * ${img_cond_steps}'} # each image patch is history concatenated
       cfg:
@@ -74,7 +74,7 @@ ema:
   decay: 0.995
 
 train_dataset:
-  _target_: agent.dataset.sequence.StitchedSequenceDataset
+  _target_: dppo.agent.dataset.sequence.StitchedSequenceDataset
   use_img: True
   dataset_path: ${train_dataset_path}
   horizon_steps: ${horizon_steps}

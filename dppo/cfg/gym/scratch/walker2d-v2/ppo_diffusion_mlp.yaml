@@ -3,7 +3,7 @@ defaults:
 hydra:
   run:  
     dir: ${logdir}
-_target_: agent.finetune.train_ppo_diffusion_agent.TrainPPODiffusionAgent
+_target_: dppo.agent.finetune.train_ppo_diffusion_agent.TrainPPODiffusionAgent
 
 name: ${env_name}_nopre_ppo_diffusion_mlp_ta${horizon_steps}_td${denoising_steps}
 logdir: ${oc.env:DPPO_LOG_DIR}/gym-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}
@@ -73,7 +73,7 @@ train:
   target_kl: 1
 
 model:
-  _target_: model.diffusion.diffusion_ppo.PPODiffusion
+  _target_: dppo.model.diffusion.diffusion_ppo.PPODiffusion
   # HP to tune
   gamma_denoising: 1
   clip_ploss_coef: 0.1
@@ -84,7 +84,7 @@ model:
   min_logprob_denoising_std: 0.1
   #
   actor:
-    _target_: model.diffusion.mlp_diffusion.DiffusionMLP
+    _target_: dppo.model.diffusion.mlp_diffusion.DiffusionMLP
     horizon_steps: ${horizon_steps}
     action_dim: ${action_dim}
     cond_dim: ${eval:'${obs_dim} * ${cond_steps}'}
@@ -93,7 +93,7 @@ model:
     activation_type: ReLU
     residual_style: True
   critic:
-    _target_: model.common.critic.CriticObs
+    _target_: dppo.model.common.critic.CriticObs
     mlp_dims: [256, 256, 256]
     activation_type: Mish
     residual_style: True

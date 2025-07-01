@@ -10,8 +10,8 @@ import einops
 log = logging.getLogger(__name__)
 import torch.nn.functional as F
 
-from model.diffusion.diffusion import DiffusionModel
-from model.diffusion.sampling import make_timesteps
+from dppo.model.diffusion.diffusion import DiffusionModel
+from dppo.model.diffusion.sampling import make_timesteps
 
 
 class RWRDiffusion(DiffusionModel):

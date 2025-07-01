@@ -18,7 +18,7 @@ import logging
 import math
 
 log = logging.getLogger(__name__)
-from model.diffusion.diffusion_vpg import VPGDiffusion
+from dppo.model.diffusion.diffusion_vpg import VPGDiffusion
 
 
 class PPODiffusion(VPGDiffusion):

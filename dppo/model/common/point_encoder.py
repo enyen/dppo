@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from einops import rearrange, reduce
 from pytorch3d.ops import sample_farthest_points, knn_points
-from model.common.mlp import ResidualMLP
+from dppo.model.common.mlp import ResidualMLP
 
 
 class PointEncoder(nn.Module):

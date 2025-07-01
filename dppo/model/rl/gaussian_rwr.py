@@ -5,7 +5,7 @@ Reward-weighted regression (RWR) for Gaussian policy.
 
 import torch
 import logging
-from model.common.gaussian import GaussianModel
+from dppo.model.common.gaussian import GaussianModel
 import torch.distributions as D
 
 log = logging.getLogger(__name__)

@@ -9,8 +9,8 @@ import torch
 import logging
 
 log = logging.getLogger(__name__)
-from util.timer import Timer
-from agent.eval.eval_agent import EvalAgent
+from dppo.util.timer import Timer
+from dppo.agent.eval.eval_agent import EvalAgent
 
 
 class EvalImgDiffusionAgent(EvalAgent):

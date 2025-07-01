@@ -6,11 +6,11 @@ Parent PPO fine-tuning agent class.
 from typing import Optional
 import torch
 import logging
-from util.scheduler import CosineAnnealingWarmupRestarts
+from dppo.util.scheduler import CosineAnnealingWarmupRestarts
 
 log = logging.getLogger(__name__)
-from agent.finetune.train_agent import TrainAgent
-from util.reward_scaling import RunningRewardScaler
+from dppo.agent.finetune.train_agent import TrainAgent
+from dppo.util.reward_scaling import RunningRewardScaler
 
 
 class TrainPPOAgent(TrainAgent):

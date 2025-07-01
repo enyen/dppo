@@ -6,7 +6,7 @@ Policy gradient for Gaussian policy
 import torch
 from copy import deepcopy
 import logging
-from model.common.gaussian import GaussianModel
+from dppo.model.common.gaussian import GaussianModel
 
 
 class VPG_Gaussian(GaussianModel):

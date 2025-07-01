@@ -13,7 +13,7 @@ H, W: image height and width
 
 from typing import Optional
 import torch
-from model.rl.gmm_vpg import VPG_GMM
+from dppo.model.rl.gmm_vpg import VPG_GMM
 
 
 class PPO_GMM(VPG_GMM):

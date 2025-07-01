@@ -14,15 +14,15 @@ from copy import deepcopy
 
 log = logging.getLogger(__name__)
 
-from model.diffusion.modules import (
+from dppo.model.diffusion.modules import (
     SinusoidalPosEmb,
     Downsample1d,
     Upsample1d,
     Conv1dBlock,
 )
-from model.common.mlp import ResidualMLP
-from model.diffusion.modules import SinusoidalPosEmb
-from model.common.modules import SpatialEmb, RandomShiftsAug
+from dppo.model.common.mlp import ResidualMLP
+from dppo.model.diffusion.modules import SinusoidalPosEmb
+from dppo.model.common.modules import SpatialEmb, RandomShiftsAug
 
 class ResidualBlock1D(nn.Module):
 

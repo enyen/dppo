@@ -8,8 +8,8 @@ import wandb
 import numpy as np
 
 log = logging.getLogger(__name__)
-from util.timer import Timer
-from agent.pretrain.train_agent import PreTrainAgent, batch_to_device
+from dppo.util.timer import Timer
+from dppo.agent.pretrain.train_agent import PreTrainAgent, batch_to_device
 
 
 class TrainGaussianAgent(PreTrainAgent):

@@ -13,7 +13,7 @@ H, W: image height and width
 
 from typing import Optional
 import torch
-from model.rl.gaussian_vpg import VPG_Gaussian
+from dppo.model.rl.gaussian_vpg import VPG_Gaussian
 
 
 class PPO_Gaussian(VPG_Gaussian):

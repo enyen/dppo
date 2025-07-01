@@ -9,8 +9,8 @@ import copy
 
 log = logging.getLogger(__name__)
 
-from model.diffusion.diffusion import DiffusionModel
-from model.diffusion.sampling import make_timesteps
+from dppo.model.diffusion.diffusion import DiffusionModel
+from dppo.model.diffusion.sampling import make_timesteps
 
 
 class DIPODiffusion(DiffusionModel):

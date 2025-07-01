@@ -3,7 +3,7 @@ defaults:
 hydra:
   run:
     dir: ${logdir}
-_target_: agent.pretrain.train_gaussian_agent.TrainGaussianAgent
+_target_: dppo.agent.pretrain.train_gaussian_agent.TrainGaussianAgent
 
 name: avoid_m1_pre_gaussian_mlp_ta${horizon_steps}
 logdir: ${oc.env:DPPO_LOG_DIR}/d3il-pretrain/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}
@@ -35,9 +35,9 @@ train:
   save_model_freq: 500
 
 model:
-  _target_: model.common.gaussian.GaussianModel
+  _target_: dppo.model.common.gaussian.GaussianModel
   network:
-    _target_: model.common.mlp_gaussian.Gaussian_MLP
+    _target_: dppo.model.common.mlp_gaussian.Gaussian_MLP
     mlp_dims: [256, 256, 256] # smaller MLP for less overfitting
     activation_type: ReLU
     residual_style: True
@@ -52,7 +52,7 @@ ema:
   decay: 0.995
 
 train_dataset:
-  _target_: agent.dataset.sequence.StitchedSequenceDataset
+  _target_: dppo.agent.dataset.sequence.StitchedSequenceDataset
   dataset_path: ${train_dataset_path}
   horizon_steps: ${horizon_steps}
   cond_steps: ${cond_steps}

@@ -3,7 +3,7 @@ defaults:
 hydra:
   run:  
     dir: ${logdir}
-_target_: agent.eval.eval_gaussian_agent.EvalGaussianAgent
+_target_: dppo.agent.eval.eval_gaussian_agent.EvalGaussianAgent
 
 name: ${env_name}_eval_gaussian_mlp_ta${horizon_steps}
 logdir: ${oc.env:DPPO_LOG_DIR}/gym-eval/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}
@@ -39,11 +39,11 @@ env:
       reset_within_step: True
 
 model:
-  _target_: model.common.gaussian.GaussianModel
+  _target_: dppo.model.common.gaussian.GaussianModel
   #
   network_path: ${base_policy_path}
   network:
-    _target_: model.common.mlp_gaussian.Gaussian_MLP
+    _target_: dppo.model.common.mlp_gaussian.Gaussian_MLP
     mlp_dims: [256, 256, 256]
     activation_type: Mish
     fixed_std: 0.1

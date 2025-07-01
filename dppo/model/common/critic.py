@@ -8,8 +8,8 @@ import torch
 import einops
 from copy import deepcopy
 
-from model.common.mlp import MLP, ResidualMLP
-from model.common.modules import SpatialEmb, RandomShiftsAug
+from dppo.model.common.mlp import MLP, ResidualMLP
+from dppo.model.common.modules import SpatialEmb, RandomShiftsAug
 
 
 class CriticObs(torch.nn.Module):

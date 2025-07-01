@@ -5,7 +5,7 @@ MLP models for GMM policy.
 
 import torch
 import torch.nn as nn
-from model.common.mlp import MLP, ResidualMLP
+from dppo.model.common.mlp import MLP, ResidualMLP
 
 
 class GMM_MLP(nn.Module):

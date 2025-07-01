@@ -8,7 +8,7 @@ import logging
 from copy import deepcopy
 import torch.nn.functional as F
 
-from model.common.gaussian import GaussianModel
+from dppo.model.common.gaussian import GaussianModel
 
 log = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ defaults:
 hydra:
   run:
     dir: ${logdir}
-_target_: agent.pretrain.train_gaussian_agent.TrainGaussianAgent
+_target_: dppo.agent.pretrain.train_gaussian_agent.TrainGaussianAgent
 
 name: ${env}_pre_gmm_transformer_ta${horizon_steps}
 logdir: ${oc.env:DPPO_LOG_DIR}/robomimic-pretrain/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}
@@ -35,9 +35,9 @@ train:
   save_model_freq: 500
 
 model:
-  _target_: model.common.gmm.GMMModel
+  _target_: dppo.model.common.gmm.GMMModel
   network:
-    _target_: model.common.transformer.GMM_Transformer
+    _target_: dppo.model.common.transformer.GMM_Transformer
     transformer_embed_dim: 96
     transformer_num_heads: 4
     transformer_num_layers: 4
@@ -54,7 +54,7 @@ ema:
   decay: 0.995
 
 train_dataset:
-  _target_: agent.dataset.sequence.StitchedSequenceDataset
+  _target_: dppo.agent.dataset.sequence.StitchedSequenceDataset
   dataset_path: ${train_dataset_path}
   horizon_steps: ${horizon_steps}
   cond_steps: ${cond_steps}

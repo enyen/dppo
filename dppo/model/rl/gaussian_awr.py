@@ -5,7 +5,7 @@ Advantage-weighted regression (AWR) for Gaussian policy.
 
 import torch
 import logging
-from model.rl.gaussian_rwr import RWR_Gaussian
+from dppo.model.rl.gaussian_rwr import RWR_Gaussian
 
 log = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ defaults:
 hydra:
   run:
     dir: ${logdir}
-_target_: agent.finetune.train_rwr_diffusion_agent.TrainRWRDiffusionAgent
+_target_: dppo.agent.finetune.train_rwr_diffusion_agent.TrainRWRDiffusionAgent
 
 name: ${env_name}_rwr_diffusion_mlp_ta${horizon_steps}_td${denoising_steps}
 logdir: ${oc.env:DPPO_LOG_DIR}/robomimic-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}
@@ -68,14 +68,14 @@ train:
   update_epochs: 16
 
 model:
-  _target_: model.diffusion.diffusion_rwr.RWRDiffusion
+  _target_: dppo.model.diffusion.diffusion_rwr.RWRDiffusion
   # Sampling HPs
   min_sampling_denoising_std: 0.1
   randn_clip_value: 3
   #
   network_path: ${base_policy_path}
   network:
-    _target_: model.diffusion.mlp_diffusion.DiffusionMLP
+    _target_: dppo.model.diffusion.mlp_diffusion.DiffusionMLP
     time_dim: 16
     mlp_dims: [512, 512, 512]
     residual_style: True

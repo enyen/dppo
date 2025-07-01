@@ -9,11 +9,11 @@ import random
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
-from agent.dataset.d3il_dataset.aligning_dataset import Aligning_Dataset
-from agent.dataset.d3il_dataset.avoiding_dataset import Avoiding_Dataset
-from agent.dataset.d3il_dataset.pushing_dataset import Pushing_Dataset
-from agent.dataset.d3il_dataset.sorting_dataset import Sorting_Dataset
-from agent.dataset.d3il_dataset.stacking_dataset import Stacking_Dataset
+from dppo.agent.dataset.d3il_dataset.aligning_dataset import Aligning_Dataset
+from dppo.agent.dataset.d3il_dataset.avoiding_dataset import Avoiding_Dataset
+from dppo.agent.dataset.d3il_dataset.pushing_dataset import Pushing_Dataset
+from dppo.agent.dataset.d3il_dataset.sorting_dataset import Sorting_Dataset
+from dppo.agent.dataset.d3il_dataset.stacking_dataset import Stacking_Dataset
 
 
 def make_dataset(load_path, save_dir, save_name_prefix, env_type, val_split):

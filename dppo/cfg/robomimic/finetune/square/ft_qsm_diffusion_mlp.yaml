@@ -3,7 +3,7 @@ defaults:
 hydra:
   run:
     dir: ${logdir}
-_target_: agent.finetune.train_qsm_diffusion_agent.TrainQSMDiffusionAgent
+_target_: dppo.agent.finetune.train_qsm_diffusion_agent.TrainQSMDiffusionAgent
 
 name: ${env_name}_qsm_diffusion_mlp_ta${horizon_steps}_td${denoising_steps}
 logdir: ${oc.env:DPPO_LOG_DIR}/robomimic-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}
@@ -76,14 +76,14 @@ train:
   batch_size: 1000
 
 model:
-  _target_: model.diffusion.diffusion_qsm.QSMDiffusion
+  _target_: dppo.model.diffusion.diffusion_qsm.QSMDiffusion
   # Sampling HPs
   min_sampling_denoising_std: 0.1
   randn_clip_value: 3
   #
   network_path: ${base_policy_path}
   actor:
-    _target_: model.diffusion.mlp_diffusion.DiffusionMLP
+    _target_: dppo.model.diffusion.mlp_diffusion.DiffusionMLP
     time_dim: 32
     mlp_dims: [1024, 1024, 1024]
     cond_mlp_dims: [512, 64]
@@ -92,7 +92,7 @@ model:
     horizon_steps: ${horizon_steps}
     action_dim: ${action_dim}
   critic:
-    _target_: model.common.critic.CriticObsAct
+    _target_: dppo.model.common.critic.CriticObsAct
     action_dim: ${action_dim}
     action_steps: ${act_steps}
     cond_dim: ${eval:'${obs_dim} * ${cond_steps}'}

@@ -3,7 +3,7 @@ defaults:
 hydra:
   run:
     dir: ${logdir}
-_target_: agent.finetune.train_sac_agent.TrainSACAgent
+_target_: dppo.agent.finetune.train_sac_agent.TrainSACAgent
 
 name: ${env_name}_sac_mlp_ta${horizon_steps}
 logdir: ${oc.env:DPPO_LOG_DIR}/gym-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}
@@ -65,11 +65,11 @@ train:
   init_temperature: 1
 
 model:
-  _target_: model.rl.gaussian_sac.SAC_Gaussian
+  _target_: dppo.model.rl.gaussian_sac.SAC_Gaussian
   randn_clip_value: 10
   tanh_output: True # squash after sampling
   actor:
-    _target_: model.common.mlp_gaussian.Gaussian_MLP
+    _target_: dppo.model.common.mlp_gaussian.Gaussian_MLP
     mlp_dims: [256, 256]
     activation_type: ReLU
     tanh_output: False  # squash after sampling instead
@@ -79,7 +79,7 @@ model:
     std_max: 7.3891
     std_min: 0.0067
   critic: # no layernorm
-    _target_: model.common.critic.CriticObsAct
+    _target_: dppo.model.common.critic.CriticObsAct
     mlp_dims: [256, 256]
     activation_type: ReLU
     cond_dim: ${eval:'${obs_dim} * ${cond_steps}'}

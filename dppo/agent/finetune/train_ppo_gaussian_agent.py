@@ -13,8 +13,8 @@ import wandb
 import math
 
 log = logging.getLogger(__name__)
-from util.timer import Timer
-from agent.finetune.train_ppo_agent import TrainPPOAgent
+from dppo.util.timer import Timer
+from dppo.agent.finetune.train_ppo_agent import TrainPPOAgent
 
 
 class TrainPPOGaussianAgent(TrainPPOAgent):

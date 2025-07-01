@@ -13,8 +13,8 @@ import wandb
 from collections import deque
 
 log = logging.getLogger(__name__)
-from util.timer import Timer
-from agent.finetune.train_agent import TrainAgent
+from dppo.util.timer import Timer
+from dppo.agent.finetune.train_agent import TrainAgent
 
 
 class TrainSACAgent(TrainAgent):
