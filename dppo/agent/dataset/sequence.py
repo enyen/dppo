@@ -48,6 +48,8 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         use_img=False,
         use_point=False,
         augment_xy=0.,
+        n_dpc=1,
+        n_pc=1,
         device="cuda:0",
     ):
         assert (
@@ -61,6 +63,8 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         self.use_img = use_img
         self.use_point = use_point
         self.augment_xy = augment_xy
+        self.n_dpc = n_dpc
+        self.n_pc = n_pc
 
         # Load dataset to device specified
         if dataset_path.endswith(".npz"):
@@ -87,10 +91,12 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         # Extract states and actions up to max_n_episodes
         self.states = (
             torch.from_numpy(dataset["states"][:total_num_steps]).float().to(device)
-        )  # (total_num_steps, obs_dim)
+        )  # (total_num_steps, obs_dim): [n-dpc + 3d-tsl + 6d-rot + n-pc]
+        self.states = self.states[:, :(n_dpc + 9 + n_pc)]
         self.actions = (
             torch.from_numpy(dataset["actions"][:total_num_steps]).float().to(device)
-        )  # (total_num_steps, action_dim)
+        )  # (total_num_steps, action_dim): [3d-tsl + 6d-rot + n-pc]
+        self.actions = self.actions[:, :(9 + n_pc)]
         log.info(f"Loaded dataset from {dataset_path}")
         log.info(f"Number of episodes: {min(max_n_episodes, len(traj_lengths))}")
         log.info(f"States shape/type: {self.states.shape, self.states.dtype}")
@@ -107,12 +113,12 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
             log.info(f"Points shape/type: {self.points.shape, self.points.dtype}")
 
         # Extract normalizing stats
-        self.states_mean = torch.from_numpy(norms['obs_mean'])[None].float().to(device)
-        self.states_std = torch.from_numpy(norms['obs_std'])[None].float().to(device)
+        self.states_mean = torch.from_numpy(norms['obs_mean'])[None, :(n_dpc + 9 + n_pc)].float().to(device)
+        self.states_std = torch.from_numpy(norms['obs_std'])[None, :(n_dpc + 9 + n_pc)].float().to(device)
         self.points_mean = torch.from_numpy(norms['pnt_mean']).float().to(device)
         self.points_std = torch.from_numpy(norms['pnt_std']).float().to(device)
-        self.act_min = torch.from_numpy(norms['act_min'])[None].float().to(device)
-        act_max = torch.from_numpy(norms['act_max'])[None].float().to(device)
+        self.act_min = torch.from_numpy(norms['act_min'])[None, :(9 + n_pc)].float().to(device)
+        act_max = torch.from_numpy(norms['act_max'])[None, :(9 + n_pc)].float().to(device)
         self.act_rng = act_max - self.act_min
 
     def __getitem__(self, idx):
@@ -124,18 +130,23 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         start, num_before_start = self.indices[idx]
         end = start + self.horizon_steps
 
-        # action
+        # action: [3d-tsl + 6d-rot + n-pc]
         actions = self.actions[start:end].clone()
+        # xy
         actions[:, :3] = actions[:, :3] + augment_xy
+        # norm
         actions = ((actions - self.act_min) / self.act_rng * 2 - 1).clip(-1., 1.)
 
-        # state
+        # state: [n-dpc + 3d-tsl + 6d-rot + n-pc]
         states = self.states[(start - num_before_start) : (start + 1)]
         states = torch.stack([states[max(num_before_start - t, 0)]
                               for t in reversed(range(self.cond_steps))])  # more recent is at the end
-        states[:, :3] = states[:, :3] + augment_xy
+        # xy
+        states[:, self.n_dpc:(self.n_dpc + 3)] = states[:, self.n_dpc:(self.n_dpc + 3)] + augment_xy
+        # norm
         states = (states - self.states_mean) / self.states_std
         conditions = {"state": states}
+
         # visual
         if self.use_img:
             images = self.images[(start - num_before_start) : end]
@@ -151,7 +162,9 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
             points = torch.stack([points[max(num_before_start - t, 0)]
                                   for t in reversed(range(self.pnt_cond_steps))])
             idx_valid = points.sum(dim=-1) != 0
+            # xy
             points[idx_valid] = points[idx_valid] + augment_xy
+            # norm
             points[idx_valid] = (points[idx_valid] - self.points_mean) / self.points_std
             conditions["point"] = points
         batch = Batch(actions, conditions)
