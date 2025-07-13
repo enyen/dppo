@@ -76,6 +76,7 @@ class TrainDiffusionAgent(PreTrainAgent):
                     wandb.log(
                         {
                             "loss - train": loss_train,
+                            "lr": self.lr_scheduler.get_lr()
                         },
                         step=self.epoch,
                         commit=True,
