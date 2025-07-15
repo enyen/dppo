@@ -9,10 +9,11 @@ class PointEncoder(nn.Module):
     """
     https://arxiv.org/pdf/2410.10803v1
     """
-    def __init__(self, in_dim=3, pnt_cond_steps=1, augment_pnt=0.01,
+    def __init__(self, in_dim=3, pnt_cond_steps=1, n_pc_frame=1, augment_pnt=0.01,
                  hidden_dim=(16, 32, 64, 128), embed_dim=128, dropout=0):
         super().__init__()
         self.augment_pnt =augment_pnt
+        self.n_pc_frame = n_pc_frame
         self.pnt_cond_steps = pnt_cond_steps
 
         self.lyrs, self.glyrs = nn.ModuleList(), nn.ModuleList()
@@ -28,16 +29,18 @@ class PointEncoder(nn.Module):
                 nn.Dropout(dropout),
             ))
         assert embed_dim % pnt_cond_steps == 0, 'embed_dim need to be divisible by pnt_cond_steps'
-        self.proj_out = nn.Linear(sum(hidden_dim), embed_dim // pnt_cond_steps)
+        assert embed_dim % n_pc_frame == 0, 'embed_dim need to be divisible by n_pc_frame'
+        self.proj_out = nn.Linear(sum(hidden_dim), embed_dim // pnt_cond_steps // n_pc_frame)
 
     def forward(self, x):
         """
-        :param x: torch.tensor [b, t, l_in, d_in]
+        :param x: torch.tensor [b, t, f, l_in, d_in]
         :return: torch.tensor [b, d_out]
         """
-        b, t, l, _ = x.shape
+        b, t, f, l, _ = x.shape
         assert t == self.pnt_cond_steps
-        x = rearrange(x, 'b t l d -> (b t) l d')
+        assert f == self.n_pc_frame
+        x = rearrange(x, 'b t f l d -> (b t f) l d')
         x = process_point(x, self.augment_pnt)
 
         xs = []
@@ -49,7 +52,7 @@ class PointEncoder(nn.Module):
             xs.append(x)
         x = self.proj_out(torch.cat(xs, dim=2))
         x = x.max(dim=1).values
-        x = rearrange(x, '(b t) d -> b (d t)', b=b, t=t)
+        x = rearrange(x, '(b t f) d -> b (d t f)', b=b, t=t, f=f)
         return x
 
 

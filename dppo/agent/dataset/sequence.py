@@ -109,7 +109,7 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         if self.use_point:
             self.points = torch.from_numpy(dataset["points"][:total_num_steps]).to(
                 device
-            )  # (total_num_steps, L, C)
+            )  # (total_num_steps, F, L, C)
             log.info(f"Points shape/type: {self.points.shape, self.points.dtype}")
 
         # Extract normalizing stats
@@ -161,11 +161,13 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
             points = self.points[(start - num_before_start) : end]
             points = torch.stack([points[max(num_before_start - t, 0)]
                                   for t in reversed(range(self.pnt_cond_steps))])
-            idx_valid = points.sum(dim=-1) != 0
-            # xy
-            points[idx_valid] = points[idx_valid] + augment_xy
-            # norm
-            points[idx_valid] = (points[idx_valid] - self.points_mean) / self.points_std
+            # xy: world frame
+            idx_valid = points[:, 0].sum(dim=-1) != 0
+            points[:, 0][idx_valid] = points[:, 0][idx_valid] + augment_xy
+            # norm: world and relative frames
+            for j in range(self.points.shape[1]):
+                idx_valid = points[:, j].sum(dim=-1) != 0
+                points[:, j][idx_valid] = (points[:, j][idx_valid] - self.points_mean[j]) / self.points_std[j]
             conditions["point"] = points
         batch = Batch(actions, conditions)
         return batch
