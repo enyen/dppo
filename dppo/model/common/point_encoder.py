@@ -10,12 +10,14 @@ class PointEncoder(nn.Module):
     https://arxiv.org/pdf/2410.10803v1
     """
     def __init__(self, in_dim=3, n_step=1, n_frame=1, augment_pnt=0.01,
-                 hidden_dim=(16, 32, 64, 128), embed_dim=128, dropout=0):
+                 hidden_dim=(16, 32, 64, 128), embed_dim=128, dropout=0, share_frame=True):
         super().__init__()
         self.augment_pnt =augment_pnt
         self.n_frame = n_frame
         self.n_step = n_step
+        self.share_frame = share_frame
 
+        n_lyr_frame = 1 if share_frame else n_frame
         self.lyrs, self.glyrs = nn.ModuleList(), nn.ModuleList()
         for i in range(len(hidden_dim)):
             in_dim_ = hidden_dim[i - 1] if i else in_dim
@@ -24,7 +26,7 @@ class PointEncoder(nn.Module):
                     nn.Sequential(
                         nn.Linear(in_dim_, hidden_dim[i]),
                         nn.ReLU()
-                    ) for _ in range(n_frame)
+                    ) for _ in range(n_lyr_frame)
                 ]))
             self.glyrs.append(
                 nn.ModuleList([
@@ -32,7 +34,7 @@ class PointEncoder(nn.Module):
                         nn.Linear(hidden_dim[i] * 2, hidden_dim[i]),
                         nn.ReLU(),
                         nn.Dropout(dropout)
-                    ) for _ in range(n_frame)
+                    ) for _ in range(n_lyr_frame)
                 ]))
         assert embed_dim % n_step == 0, 'embed_dim need to be divisible by n_step'
         assert embed_dim % n_frame == 0, 'embed_dim need to be divisible by n_frame'
@@ -46,12 +48,15 @@ class PointEncoder(nn.Module):
         nb, nt, nf, nl, _ = pnt.shape
         assert nt == self.n_step
         assert nf == self.n_frame
-        pnt = rearrange(pnt, 'b t f l d -> (b t) f l d')
+        if self.share_frame:
+            pnt = rearrange(pnt, 'b t f l d -> (b t f) l d')
+        else:
+            pnt = rearrange(pnt, 'b t f l d -> (b t) f l d')
         pnt = process_point(pnt, self.augment_pnt)
 
         fs = []
-        for i in range(self.n_frame):
-            x = pnt[:, i]
+        for i in range(1 if self.share_frame else self.n_frame):
+            x = pnt if self.share_frame else pnt[:, i]
             xs = []
             for (lyr, glyr) in zip(self.lyrs, self.glyrs):
                 x = lyr[i](x)
@@ -61,7 +66,10 @@ class PointEncoder(nn.Module):
                 xs.append(x)
             x = self.proj_out(torch.cat(xs, dim=2))
             x = x.max(dim=1).values
-            x = rearrange(x, '(b t) d -> b (d t)', b=nb, t=nt)
+            if self.share_frame:
+                x = rearrange(x, '(b t f) d -> b (d t f)', b=nb, t=nt, f=nf)
+            else:
+                x = rearrange(x, '(b t) d -> b (d t)', b=nb, t=nt)
             fs.append(x)
         x = torch.cat(fs, dim=1)
         return x
@@ -73,19 +81,21 @@ class PointEncoderSA(nn.Module):
     """
     def __init__(self, in_dim=3, n_step=1, n_frame=1, augment_pnt=0.01,
                  hidden_dim=(16, 32, 48), embed_dim=64, dropout=(0, 0), num_head=4,
-                 mul_que=0.125, mul_neb=1.25):
+                 mul_que=0.125, mul_neb=1.25, share_frame=True):
         super().__init__()
         self.augment_pnt = augment_pnt
         self.n_step = n_step
         self.n_frame = n_frame
         self.mul_que = mul_que
         self.num_neb = int(mul_neb / mul_que)
+        self.share_frame = share_frame
 
+        n_lyr_frame = 1 if share_frame else n_frame
         self.proj_in = nn.ModuleList([
             nn.Sequential(
                 nn.Linear(in_dim, hidden_dim[0]),
                 nn.ReLU()
-            ) for _ in range(n_frame)
+            ) for _ in range(n_lyr_frame)
         ])
         self.lyrs = nn.ModuleList()
         for i in range(len(hidden_dim)):
@@ -95,7 +105,7 @@ class PointEncoderSA(nn.Module):
                         SelfAttention(hidden_dim[i], num_head, dropout[0]),
                         FefoAttention(hidden_dim[i], hidden_dim[i] * 2, dropout[1])),
                     'up': ResidualMLP([hidden_dim[i]] + [hidden_dim[i] * 2] * 4, use_layernorm=True)
-                }) for _ in range(n_frame)
+                }) for _ in range(n_lyr_frame)
             ])
             self.lyrs.append(lyr)
 
@@ -111,12 +121,15 @@ class PointEncoderSA(nn.Module):
         nb, nt, nf, nl, _ = pnt.shape
         assert nt == self.n_step
         assert nf == self.n_frame
-        pnt = rearrange(pnt, 'b t f l d -> (b t) f l d')
+        if self.share_frame:
+            pnt = rearrange(pnt, 'b t f l d -> (b t f) l d')
+        else:
+            pnt = rearrange(pnt, 'b t f l d -> (b t) f l d')
         pnt = process_point(pnt, self.augment_pnt)
 
         fs = []
-        for i in range(self.n_frame):
-            x = pnt[:, i]
+        for i in range(1 if self.share_frame else self.n_frame):
+            x = pnt if self.share_frame else pnt[:, i]
             # project in
             x = self.proj_in[i](x)  # [b l d]
             # SA-CNN
@@ -127,13 +140,16 @@ class PointEncoderSA(nn.Module):
                 # SA
                 x = rearrange(x, 'b q k d -> (b q) k d')
                 x = lyr[i]['sa'](x)
-                x = rearrange(x, '(b q) k d -> b q k d', b=nb * nt, q=num_que)
+                x = rearrange(x, '(b q) k d -> b q k d', q=num_que)
                 x = reduce(x, 'b q k d -> b q d', 'max')
                 x = lyr[i]['up'](x)
             # project out
             x = self.proj_out(x)
             x = reduce(x, 'b q d -> b d', 'max')
-            x = rearrange(x, '(b t) d -> b (d t)', b=nb, t=nt)
+            if self.share_frame:
+                x = rearrange(x, '(b t f) d -> b (d t f)', b=nb, t=nt, f=nf)
+            else:
+                x = rearrange(x, '(b t) d -> b (d t)', b=nb, t=nt)
             fs.append(x)
         x = torch.cat(fs, dim=1)
         return x
