@@ -51,6 +51,7 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         n_dpc=1,
         n_pc=1,
         device="cuda:0",
+        n_dpc_full=6,
     ):
         assert (
             img_cond_steps <= cond_steps
@@ -113,8 +114,12 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
             log.info(f"Points shape/type: {self.points.shape, self.points.dtype}")
 
         # Extract normalizing stats
-        self.states_mean = torch.from_numpy(norms['obs_mean'])[None, :(n_dpc + 9 + n_pc)].float().to(device)
-        self.states_std = torch.from_numpy(norms['obs_std'])[None, :(n_dpc + 9 + n_pc)].float().to(device)
+        self.states_mean = torch.from_numpy(np.hstack((
+            norms['obs_mean'][:n_dpc],
+            norms['obs_mean'][n_dpc_full:(n_dpc_full + 9 + n_pc)])))[None].float().to(device)
+        self.states_std = torch.from_numpy(np.hstack((
+            norms['obs_std'][:n_dpc],
+            norms['obs_std'][n_dpc_full:(n_dpc_full + 9 + n_pc)])))[None].float().to(device)
         self.points_mean = torch.from_numpy(norms['pnt_mean']).float().to(device)
         self.points_std = torch.from_numpy(norms['pnt_std']).float().to(device)
         self.act_min = torch.from_numpy(norms['act_min'])[None, :(9 + n_pc)].float().to(device)
