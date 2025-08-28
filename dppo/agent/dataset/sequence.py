@@ -90,13 +90,13 @@ class StitchedSequenceDataset(torch.utils.data.Dataset):
         self.indices = self.make_indices(traj_lengths, horizon_steps)
 
         # Extract states and actions up to max_n_episodes
-        self.states = (
-            torch.from_numpy(dataset["states"][:total_num_steps]).float().to(device)
-        )  # (total_num_steps, obs_dim): [n-dpc + 3d-tsl + 6d-rot + n-pc]
-        self.states = self.states[:, :(n_dpc + 9 + n_pc)]
-        self.actions = (
-            torch.from_numpy(dataset["actions"][:total_num_steps]).float().to(device)
-        )  # (total_num_steps, action_dim): [3d-tsl + 6d-rot + n-pc]
+        # (total_num_steps, obs_dim): [n-dpc + 3d-tsl + 6d-rot + n-pc]
+        self.states = torch.from_numpy(np.hstack((
+            dataset["states"][:total_num_steps, :n_dpc],
+            dataset["states"][:total_num_steps, n_dpc_full:(n_dpc_full + 9 + n_pc)]
+        ))).float().to(device)
+        # (total_num_steps, action_dim): [3d-tsl + 6d-rot + n-pc]
+        self.actions = torch.from_numpy(dataset["actions"][:total_num_steps]).float().to(device)
         self.actions = self.actions[:, :(9 + n_pc)]
         log.info(f"Loaded dataset from {dataset_path}")
         log.info(f"Number of episodes: {min(max_n_episodes, len(traj_lengths))}")
