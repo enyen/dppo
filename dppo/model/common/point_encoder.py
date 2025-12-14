@@ -1,20 +1,23 @@
 import torch
 import torch.nn as nn
 from einops import rearrange, reduce
-from pytorch3d.ops import sample_farthest_points, knn_points
 from dppo.model.common.mlp import ResidualMLP
+try:
+    from pytorch3d.ops import sample_farthest_points, knn_points
+except:
+    pass
 
 
 class PointEncoder(nn.Module):
     """
     https://arxiv.org/pdf/2410.10803v1
     """
-    def __init__(self, in_dim=3, n_step=1, n_frame=1, augment_pnt=0.01,
+    def __init__(self, in_dim=3, n_step=1, n_frame=1, noise=0.01,
                  hidden_dim=(16, 32, 64, 128), embed_dim=128, dropout=0, share_frame=True):
         super().__init__()
-        self.augment_pnt =augment_pnt
-        self.n_frame = n_frame
+        self.noise =noise
         self.n_step = n_step
+        self.n_frame = n_frame
         self.share_frame = share_frame
 
         n_lyr_frame = 1 if share_frame else n_frame
@@ -52,7 +55,7 @@ class PointEncoder(nn.Module):
             pnt = rearrange(pnt, 'b t f l d -> (b t f) l d')
         else:
             pnt = rearrange(pnt, 'b t f l d -> (b t) f l d')
-        pnt = process_point(pnt, self.augment_pnt)
+        pnt = process_point(pnt, self.noise)
 
         fs = []
         for i in range(1 if self.share_frame else self.n_frame):
@@ -79,11 +82,11 @@ class PointEncoderSA(nn.Module):
     """
     https://arxiv.org/pdf/2202.06407
     """
-    def __init__(self, in_dim=3, n_step=1, n_frame=1, augment_pnt=0.01,
+    def __init__(self, in_dim=3, n_step=1, n_frame=1, noise=0.01,
                  hidden_dim=(16, 32, 48), embed_dim=64, dropout=(0, 0), num_head=4,
                  mul_que=0.125, mul_neb=1.25, share_frame=True):
         super().__init__()
-        self.augment_pnt = augment_pnt
+        self.noise = noise
         self.n_step = n_step
         self.n_frame = n_frame
         self.mul_que = mul_que
@@ -125,7 +128,7 @@ class PointEncoderSA(nn.Module):
             pnt = rearrange(pnt, 'b t f l d -> (b t f) l d')
         else:
             pnt = rearrange(pnt, 'b t f l d -> (b t) f l d')
-        pnt = process_point(pnt, self.augment_pnt)
+        pnt = process_point(pnt, self.noise)
 
         fs = []
         for i in range(1 if self.share_frame else self.n_frame):
