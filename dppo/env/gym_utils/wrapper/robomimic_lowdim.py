@@ -9,12 +9,12 @@ For consistency, we will use Dict{} for the observation space, with the key "sta
 """
 
 import numpy as np
-import gym
-from gym import spaces
+import gymnasium
+from gymnasium import spaces
 import imageio
 
 
-class RobomimicLowdimWrapper(gym.Env):
+class RobomimicLowdimWrapper(gymnasium.Env):
     def __init__(
         self,
         env,
@@ -49,7 +49,7 @@ class RobomimicLowdimWrapper(gym.Env):
         # setup spaces
         low = np.full(env.action_dimension, fill_value=-1)
         high = np.full(env.action_dimension, fill_value=1)
-        self.action_space = gym.spaces.Box(
+        self.action_space = gymnasium.spaces.Box(
             low=low,
             high=high,
             shape=low.shape,

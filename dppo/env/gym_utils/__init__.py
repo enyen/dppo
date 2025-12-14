@@ -108,7 +108,7 @@ def make_async(
         return env
 
     # avoid import error due incompatible gym versions
-    from gym import spaces
+    from gymnasium import spaces
     from env.gym_utils.async_vector_env import AsyncVectorEnv
     from env.gym_utils.sync_vector_env import SyncVectorEnv
     from env.gym_utils.wrapper import wrapper_dict
@@ -129,7 +129,7 @@ def make_async(
         import gym_avoiding
     else:
         import d4rl.gym_mujoco
-    from gym.envs import make as make_
+    from gymnasium.envs import make as make_
 
     def _make_env():
         if robomimic_env_cfg_path is not None:
@@ -178,7 +178,7 @@ def make_async(
 
     def dummy_env_fn():
         """TODO(allenzren): does this dummy env allow camera obs for other envs besides robomimic?"""
-        import gym
+        import gymnasium
         import numpy as np
         from env.gym_utils.wrapper.multi_step import MultiStep
 
@@ -186,7 +186,7 @@ def make_async(
         # to prevent OpenGL context issue with fork.
         # Create a fake env whose sole purpose is to provide
         # obs/action spaces and metadata.
-        env = gym.Env()
+        env = gymnasium.Env()
         observation_space = spaces.Dict()
         if shape_meta is not None:  # rn only for images
             for key, value in shape_meta["obs"].items():
@@ -206,14 +206,14 @@ def make_async(
                     dtype=np.float32,
                 )
         else:
-            observation_space["state"] = gym.spaces.Box(
+            observation_space["state"] = gymnasium.spaces.Box(
                 -1,
                 1,
                 shape=(obs_dim,),
                 dtype=np.float32,
             )
         env.observation_space = observation_space
-        env.action_space = gym.spaces.Box(-1, 1, shape=(action_dim,), dtype=np.int64)
+        env.action_space = gymnasium.spaces.Box(-1, 1, shape=(action_dim,), dtype=np.int64)
         env.metadata = {
             "render.modes": ["human", "rgb_array", "depth_array"],
             "video.frames_per_second": 12,

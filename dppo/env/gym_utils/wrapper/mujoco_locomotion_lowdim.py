@@ -5,11 +5,11 @@ For consistency, we will use Dict{} for the observation space, with the key "sta
 """
 
 import numpy as np
-import gym
-from gym import spaces
+import gymnasium
+from gymnasium import spaces
 
 
-class MujocoLocomotionLowdimWrapper(gym.Env):
+class MujocoLocomotionLowdimWrapper(gymnasium.Env):
     def __init__(
         self,
         env,

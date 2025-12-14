@@ -1,15 +1,15 @@
 from typing import Optional, Union, List
 
-import gym
-from gym.logger import warn, deprecation
-from gym.spaces import Tuple
-from gym.vector.utils.spaces import batch_space
+import gymnasium
+from gymnasium.logger import warn, deprecation
+from gymnasium.spaces import Tuple
+from gymnasium.vector.utils.spaces import batch_space
 
 
 __all__ = ["VectorEnv"]
 
 
-class VectorEnv(gym.Env):
+class VectorEnv(gymnasium.Env):
     r"""Base class for vectorized environments.
 
     Each observation returned from vectorized environment is a batch of observations

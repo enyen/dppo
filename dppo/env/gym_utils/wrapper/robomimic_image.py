@@ -8,12 +8,12 @@ Modified from https://github.com/real-stanford/diffusion_policy/blob/main/diffus
 """
 
 import numpy as np
-import gym
-from gym import spaces
+import gymnasium
+from gymnasium import spaces
 import imageio
 
 
-class RobomimicImageWrapper(gym.Env):
+class RobomimicImageWrapper(gymnasium.Env):
     def __init__(
         self,
         env,
@@ -53,7 +53,7 @@ class RobomimicImageWrapper(gym.Env):
         # setup spaces
         low = np.full(env.action_dimension, fill_value=-1)
         high = np.full(env.action_dimension, fill_value=1)
-        self.action_space = gym.spaces.Box(
+        self.action_space = gymnasium.spaces.Box(
             low=low,
             high=high,
             shape=low.shape,

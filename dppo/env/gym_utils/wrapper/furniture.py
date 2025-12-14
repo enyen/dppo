@@ -3,7 +3,7 @@ Environment wrapper for Furniture-Bench environments.
 
 """
 
-import gym
+import gymnasium
 import numpy as np
 import torch
 from collections import deque
@@ -44,7 +44,7 @@ def stack_last_n_obs_dict(all_obs, n_steps):
     return result
 
 
-class FurnitureRLSimEnvMultiStepWrapper(gym.Wrapper):
+class FurnitureRLSimEnvMultiStepWrapper(gymnasium.Wrapper):
     env: FurnitureRLSimEnv
 
     def __init__(

@@ -3,13 +3,13 @@ Visualize Avoid environment from D3IL in MuJoCo GUI
 
 """
 
-import gym
+import gymnasium
 import gym_avoiding
 import imageio
 
 # from gym_avoiding_env.gym_avoiding.envs.avoiding import ObstacleAvoidanceEnv
 # from envs.gym_avoiding_env.gym_avoiding.envs.avoiding import ObstacleAvoidanceEnv
-from gym.envs import make as make_
+from gymnasium.envs import make as make_
 import numpy as np
 
 # env = ObstacleAvoidanceEnv(render=False)

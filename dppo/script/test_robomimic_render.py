@@ -5,7 +5,7 @@ Test Robomimic rendering, no GUI
 
 import os
 import time
-from gym import spaces
+from gymnasium import spaces
 import robosuite as suite
 
 os.environ["MUJOCO_GL"] = "egl"

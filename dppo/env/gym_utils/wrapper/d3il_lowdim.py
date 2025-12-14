@@ -7,11 +7,11 @@ For consistency, we will use Dict{} for the observation space, with the key "sta
 """
 
 import numpy as np
-import gym
-from gym import spaces
+import gymnasium
+from gymnasium import spaces
 
 
-class D3ilLowdimWrapper(gym.Env):
+class D3ilLowdimWrapper(gymnasium.Env):
     def __init__(
         self,
         env,

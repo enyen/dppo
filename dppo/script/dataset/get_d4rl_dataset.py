@@ -4,7 +4,7 @@ Download D4RL dataset and save it into our custom format for diffusion training.
 
 import os
 import logging
-import gym
+import gymnasium
 import random
 import numpy as np
 from tqdm import tqdm
@@ -14,7 +14,7 @@ from copy import deepcopy
 
 def make_dataset(env_name, save_dir, save_name_prefix, val_split, logger):
     # Create the environment
-    env = gym.make(env_name)
+    env = gymnasium.make(env_name)
     env.reset()
     env.step(
         env.action_space.sample()
